@@ -1,6 +1,6 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const STORAGE_KEY_PUBLISHED = "kantoKaseiLP";
-  const STORAGE_KEY_DRAFT = "kantoKaseiLP_draft";
+document.addEventListener("DOMContentLoaded", async () => {
+  // Migrate localStorage → IndexedDB (one-time)
+  await LPStorage.migrate();
 
   // Track uploaded file data (base64)
   const uploadedFiles = {};
@@ -112,10 +112,11 @@ document.addEventListener("DOMContentLoaded", () => {
   function handleFileUpload(zone, fieldKey, file) {
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
-    const maxSize = isVideo ? 20 * 1024 * 1024 : 5 * 1024 * 1024;
+    // IndexedDB allows much larger files
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 20 * 1024 * 1024;
 
     if (file.size > maxSize) {
-      showToast("ファイルサイズが大きすぎます（最大" + (isVideo ? "20" : "5") + "MB）");
+      showToast("ファイルサイズが大きすぎます（最大" + (isVideo ? "100" : "20") + "MB）");
       return;
     }
 
@@ -158,23 +159,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===== Load saved data =====
-  loadSavedData();
-  updateBadges();
+  await loadSavedData();
+  await updateBadges();
 
-  function loadSavedData() {
+  async function loadSavedData() {
     // Load draft first, fall back to published
-    const draft = localStorage.getItem(STORAGE_KEY_DRAFT);
-    const published = localStorage.getItem(STORAGE_KEY_PUBLISHED);
+    const draft = await LPStorage.getDraft();
+    const published = await LPStorage.getPublished();
     const data = draft || published;
     if (!data) return;
 
-    try {
-      const parsed = JSON.parse(data);
-      applyDataToForm(parsed);
-      showStatus(draft ? "下書きデータを読み込みました" : "公開データを読み込みました");
-    } catch (e) {
-      // Ignore
-    }
+    applyDataToForm(data);
+    showStatus(draft ? "下書きデータを読み込みました" : "公開データを読み込みました");
   }
 
   function applyDataToForm(data) {
@@ -224,7 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const contentEl = zone.querySelector(".upload-zone-content");
     const removeBtn = zone.querySelector(".upload-zone-remove");
 
-    if (url.startsWith("data:video") || (url.endsWith(".mp4") || url.endsWith(".webm"))) {
+    if (url.startsWith("data:video") || url.endsWith(".mp4") || url.endsWith(".webm")) {
       previewEl.innerHTML = '<video src="' + url + '" controls muted style="width:100%;height:100%;object-fit:cover;"></video>';
     } else {
       previewEl.innerHTML = '<img src="' + url + '" alt="プレビュー">';
@@ -266,36 +262,28 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  function saveDraft() {
+  async function saveDraft() {
     const data = collectFormData();
     try {
-      localStorage.setItem(STORAGE_KEY_DRAFT, JSON.stringify(data));
+      await LPStorage.saveDraft(data);
       showToast("一時保存しました");
       showStatus("一時保存: " + new Date().toLocaleTimeString("ja-JP"));
-      updateBadges();
+      await updateBadges();
     } catch (e) {
-      if (e.name === "QuotaExceededError") {
-        showToast("保存容量を超えました。画像サイズを小さくしてください。");
-      } else {
-        showToast("保存に失敗しました");
-      }
+      showToast("保存に失敗しました: " + e.message);
     }
   }
 
   // ===== Preview (プレビュー) =====
   const btnPreview = document.getElementById("btn-preview");
-  btnPreview.addEventListener("click", () => {
+  btnPreview.addEventListener("click", async () => {
     const data = collectFormData();
-    // Save as temporary preview data
     try {
-      localStorage.setItem(STORAGE_KEY_DRAFT, JSON.stringify(data));
-      // Open preview with draft flag
+      await LPStorage.saveDraft(data);
       window.open("index.html?preview=draft", "_blank");
       showToast("プレビューを開きました");
     } catch (e) {
-      if (e.name === "QuotaExceededError") {
-        showToast("保存容量を超えました。画像サイズを小さくしてください。");
-      }
+      showToast("保存に失敗しました: " + e.message);
     }
   });
 
@@ -317,29 +305,26 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === publishModal) publishModal.style.display = "none";
   });
 
-  publishConfirm.addEventListener("click", () => {
+  publishConfirm.addEventListener("click", async () => {
     const data = collectFormData();
     try {
-      localStorage.setItem(STORAGE_KEY_PUBLISHED, JSON.stringify(data));
-      // Clear draft after publishing
-      localStorage.removeItem(STORAGE_KEY_DRAFT);
+      await LPStorage.publish(data);
+      await LPStorage.removeDraft();
       publishModal.style.display = "none";
       showToast("公開しました！");
       showStatus("公開完了: " + new Date().toLocaleTimeString("ja-JP"));
-      updateBadges();
+      await updateBadges();
     } catch (e) {
-      if (e.name === "QuotaExceededError") {
-        showToast("保存容量を超えました。画像サイズを小さくしてください。");
-      }
+      showToast("公開に失敗しました: " + e.message);
     }
   });
 
   // ===== Badges =====
-  function updateBadges() {
+  async function updateBadges() {
     const badgeDraft = document.getElementById("badge-draft");
     const badgePublished = document.getElementById("badge-published");
-    const hasDraft = !!localStorage.getItem(STORAGE_KEY_DRAFT);
-    const hasPublished = !!localStorage.getItem(STORAGE_KEY_PUBLISHED);
+    const hasDraft = await LPStorage.hasDraft();
+    const hasPublished = await LPStorage.hasPublished();
 
     badgeDraft.style.display = hasDraft ? "inline-block" : "none";
     badgePublished.style.display = hasPublished ? "inline-block" : "none";
@@ -347,21 +332,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ===== Export =====
   const btnExport = document.getElementById("btn-export");
-  btnExport.addEventListener("click", () => {
-    const data = localStorage.getItem(STORAGE_KEY_PUBLISHED) || localStorage.getItem(STORAGE_KEY_DRAFT);
-    if (!data) {
-      showToast("保存データがありません。");
-      return;
+  btnExport.addEventListener("click", async () => {
+    try {
+      const json = await LPStorage.exportJSON();
+      if (!json || json === "null") {
+        showToast("保存データがありません。");
+        return;
+      }
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "kanto-kasei-lp-data.json";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("JSONをエクスポートしました");
+    } catch (e) {
+      showToast("エクスポートに失敗しました");
     }
-
-    const blob = new Blob([data], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "kanto-kasei-lp-data.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("JSONをエクスポートしました");
   });
 
   // ===== Import =====
@@ -371,13 +359,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       try {
         const data = JSON.parse(ev.target.result);
-        localStorage.setItem(STORAGE_KEY_DRAFT, JSON.stringify(data));
+        await LPStorage.importJSON(data);
         applyDataToForm(data);
         showToast("インポートしました（下書きとして保存）");
-        updateBadges();
+        await updateBadges();
       } catch (err) {
         showToast("JSONの読み込みに失敗しました");
       }
