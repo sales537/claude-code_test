@@ -82,41 +82,50 @@ document.addEventListener("DOMContentLoaded", () => {
     requestAnimationFrame(update);
   }
 
-  // Contact form
-  const form = document.getElementById("contact-form");
-  const successMsg = document.getElementById("form-success");
+  // Video embedding - auto-detect YouTube/Vimeo URLs and embed
+  document.querySelectorAll(".video-container[data-video-url]").forEach((container) => {
+    const url = container.dataset.videoUrl;
+    if (!url) return;
 
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
+    let embedUrl = "";
 
-    const name = form.querySelector("#name");
-    const email = form.querySelector("#email");
-    const message = form.querySelector("#message");
-    let valid = true;
-
-    [name, email, message].forEach((field) => field.classList.remove("error"));
-
-    if (!name.value.trim()) {
-      name.classList.add("error");
-      valid = false;
+    // YouTube
+    const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
+    if (ytMatch) {
+      embedUrl = "https://www.youtube.com/embed/" + ytMatch[1];
     }
 
-    if (!email.value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
-      email.classList.add("error");
-      valid = false;
+    // Vimeo
+    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+    if (vimeoMatch) {
+      embedUrl = "https://player.vimeo.com/video/" + vimeoMatch[1];
     }
 
-    if (!message.value.trim()) {
-      message.classList.add("error");
-      valid = false;
+    if (embedUrl) {
+      const iframe = container.querySelector("iframe");
+      if (iframe) {
+        iframe.src = embedUrl;
+      } else {
+        const newIframe = document.createElement("iframe");
+        newIframe.src = embedUrl;
+        newIframe.setAttribute("allowfullscreen", "");
+        newIframe.setAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture");
+        container.insertBefore(newIframe, container.firstChild);
+      }
+      container.classList.add("has-video");
     }
+  });
 
-    if (valid) {
-      form.querySelectorAll("input, textarea, button").forEach((el) => {
-        el.disabled = true;
-      });
-      successMsg.hidden = false;
-      successMsg.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", (e) => {
+      const targetId = anchor.getAttribute("href");
+      if (targetId === "#") return;
+      const targetEl = document.querySelector(targetId);
+      if (targetEl) {
+        e.preventDefault();
+        targetEl.scrollIntoView({ behavior: "smooth" });
+      }
+    });
   });
 });
