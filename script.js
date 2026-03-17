@@ -331,30 +331,77 @@ function loadContent() {
   const urlParams = new URLSearchParams(window.location.search);
   const isPreview = urlParams.get("preview") === "draft";
 
+  // Try IndexedDB first, fall back to localStorage
+  loadFromIndexedDB(isPreview).then((data) => {
+    if (data) {
+      applyContentData(data);
+      if (isPreview) showPreviewBanner();
+    } else {
+      // Fallback to localStorage for backwards compatibility
+      loadFromLocalStorage(isPreview);
+    }
+  }).catch(() => {
+    loadFromLocalStorage(isPreview);
+  });
+}
+
+function loadFromIndexedDB(isPreview) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("kantoKaseiDB", 1);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains("content")) {
+        db.createObjectStore("content");
+      }
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      const tx = db.transaction("content", "readonly");
+      const store = tx.objectStore("content");
+      const key = isPreview ? "draft" : "published";
+      const getReq = store.get(key);
+      getReq.onsuccess = () => {
+        if (getReq.result) {
+          resolve(getReq.result);
+        } else if (isPreview) {
+          // Draft not found, try published
+          const getPublished = store.get("published");
+          getPublished.onsuccess = () => resolve(getPublished.result || null);
+          getPublished.onerror = () => resolve(null);
+        } else {
+          resolve(null);
+        }
+      };
+      getReq.onerror = () => reject(getReq.error);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function loadFromLocalStorage(isPreview) {
   let dataStr;
   if (isPreview) {
     dataStr = localStorage.getItem("kantoKaseiLP_draft") || localStorage.getItem("kantoKaseiLP");
   } else {
     dataStr = localStorage.getItem("kantoKaseiLP");
   }
-
   if (!dataStr) return;
 
   try {
     const data = JSON.parse(dataStr);
     applyContentData(data);
-
-    // Show preview banner if in preview mode
-    if (isPreview) {
-      const banner = document.createElement("div");
-      banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#f59e0b;color:#1a1a2e;text-align:center;padding:0.5rem;font-size:0.85rem;font-weight:600;";
-      banner.textContent = "プレビューモード（未公開の下書きを表示中）";
-      document.body.appendChild(banner);
-      document.documentElement.style.scrollPaddingTop = "calc(var(--header-h) + 36px)";
-    }
+    if (isPreview) showPreviewBanner();
   } catch (e) {
-    // Silently fail - use default content
+    // Silently fail
   }
+}
+
+function showPreviewBanner() {
+  const banner = document.createElement("div");
+  banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#f59e0b;color:#1a1a2e;text-align:center;padding:0.5rem;font-size:0.85rem;font-weight:600;";
+  banner.textContent = "プレビューモード（未公開の下書きを表示中）";
+  document.body.appendChild(banner);
+  document.documentElement.style.scrollPaddingTop = "calc(var(--header-h) + 36px)";
 }
 
 function applyContentData(data) {
