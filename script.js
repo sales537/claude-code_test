@@ -488,6 +488,18 @@ function applyContentData(data) {
     if (entryEl) entryEl.href = data.entryLink;
   }
 
+  // Apply visibility settings
+  if (data.visibility) {
+    document.querySelectorAll("[data-visibility]").forEach((el) => {
+      const key = el.dataset.visibility;
+      if (data.visibility[key] === false) {
+        el.style.display = "none";
+      } else {
+        el.style.display = "";
+      }
+    });
+  }
+
   // Load logo image
   if (data.logoImage) {
     const logoImg = document.getElementById("logo-img");
