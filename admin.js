@@ -174,12 +174,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function applyDataToForm(data) {
-    // Text fields
+    // Text fields + checkbox (toggle) fields
     document.querySelectorAll("[data-field]").forEach((field) => {
       const path = field.dataset.field;
       const value = getNestedValue(data, path);
       if (value !== undefined) {
-        field.value = value;
+        if (field.type === "checkbox") {
+          field.checked = value !== false;
+        } else {
+          field.value = value;
+        }
       }
     });
 
@@ -234,13 +238,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ===== Collect form data =====
   function collectFormData() {
-    const data = { texts: {}, images: {}, videos: {}, stats: {} };
+    const data = { texts: {}, images: {}, videos: {}, stats: {}, visibility: {} };
 
-    // Text/URL fields
+    // Text/URL fields + checkbox (toggle) fields
     document.querySelectorAll("[data-field]").forEach((field) => {
       const path = field.dataset.field;
-      const value = field.value;
-      setNestedValue(data, path, value);
+      if (field.type === "checkbox") {
+        setNestedValue(data, path, field.checked);
+      } else {
+        setNestedValue(data, path, field.value);
+      }
     });
 
     // Uploaded files (override URL values)

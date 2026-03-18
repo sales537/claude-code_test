@@ -56,8 +56,8 @@
     <section class="hero" id="hero" aria-labelledby="hero-heading">
       <div class="hero-overlay"></div>
       <div class="hero-media">
-        <img src="https://placehold.co/1920x1080/0d2847/ffffff?text=HERO+IMAGE" alt="" class="hero-bg-img" id="hero-bg-img" data-content-img="hero_image">
-        <video autoplay muted loop playsinline class="hero-bg-video" id="hero-bg-video" style="display:none;"></video>
+        <img src="https://placehold.co/1920x1080/0d2847/ffffff?text=HERO+IMAGE" alt="" class="hero-bg-img" id="hero-bg-img" data-content-img="hero_image" data-visibility="hero_image">
+        <video autoplay muted loop playsinline class="hero-bg-video" id="hero-bg-video" style="display:none;" data-visibility="hero_video"></video>
       </div>
       <div class="hero-particles"></div>
       <div class="container hero-content">
@@ -91,18 +91,18 @@
         </div>
 
         <div class="about-media-row" data-animate="fade-up">
-          <div class="media-slot">
+          <div class="media-slot" data-visibility="about_image_1">
             <img src="https://placehold.co/600x400/0d2847/ffffff?text=工場外観" alt="関東化成工業 工場外観" data-content-img="about_image_1">
             <p class="media-caption" data-content="about_caption_1">本社工場外観</p>
           </div>
-          <div class="media-slot">
+          <div class="media-slot" data-visibility="about_image_2">
             <img src="https://placehold.co/600x400/0d2847/ffffff?text=製造現場" alt="関東化成工業 製造現場" data-content-img="about_image_2">
             <p class="media-caption" data-content="about_caption_2">製造現場の様子</p>
           </div>
         </div>
 
         <!-- 会社紹介動画 -->
-        <div class="video-slot" data-animate>
+        <div class="video-slot" data-animate data-visibility="about_video">
           <div class="video-container" data-video-id="about_video">
             <div class="video-placeholder">
               <div class="video-play-icon">▶</div>
@@ -167,7 +167,7 @@
         <p class="section-subtitle" data-animate data-content="work_subtitle">世界をリードする表面処理技術で、あなたの可能性を広げる</p>
         <div class="work-grid" data-stagger>
           <div class="work-card" data-animate>
-            <div class="work-card-img">
+            <div class="work-card-img" data-visibility="work_images">
               <img src="https://placehold.co/400x300/0d2847/ffffff?text=めっき技術" alt="めっき技術" data-content-img="work_image_1">
             </div>
             <div class="work-card-body">
@@ -177,7 +177,7 @@
             </div>
           </div>
           <div class="work-card" data-animate>
-            <div class="work-card-img">
+            <div class="work-card-img" data-visibility="work_images">
               <img src="https://placehold.co/400x300/0d2847/ffffff?text=塗装・蒸着" alt="塗装・蒸着技術" data-content-img="work_image_2">
             </div>
             <div class="work-card-body">
@@ -187,7 +187,7 @@
             </div>
           </div>
           <div class="work-card" data-animate>
-            <div class="work-card-img">
+            <div class="work-card-img" data-visibility="work_images">
               <img src="https://placehold.co/400x300/0d2847/ffffff?text=樹脂成形" alt="樹脂成形" data-content-img="work_image_3">
             </div>
             <div class="work-card-body">
@@ -198,7 +198,7 @@
           </div>
         </div>
 
-        <div class="video-slot" data-animate>
+        <div class="video-slot" data-animate data-visibility="work_video">
           <div class="video-container" data-video-id="work_video">
             <div class="video-placeholder">
               <div class="video-play-icon">▶</div>
@@ -274,7 +274,7 @@
             <div><h3 data-content="benefit_title_6">福利厚生施設</h3><p data-content="benefit_desc_6">グループ会社によるサービス充実</p></div>
           </div>
         </div>
-        <div class="benefits-media" data-animate>
+        <div class="benefits-media" data-animate data-visibility="benefits_image">
           <div class="media-slot">
             <img src="https://placehold.co/800x400/0d2847/ffffff?text=福利厚生イメージ" alt="福利厚生" data-content-img="benefits_image">
           </div>
@@ -290,7 +290,7 @@
         <p class="section-subtitle" data-animate data-content="activities_subtitle">仕事だけじゃない。仲間との絆を深める活動が充実しています。</p>
         <div class="activities-grid" data-stagger>
           <div class="activity-card" data-animate>
-            <div class="activity-card-img">
+            <div class="activity-card-img" data-visibility="activity_images">
               <img src="https://placehold.co/500x350/0d2847/ffffff?text=野球部" alt="野球部の活動" data-content-img="activity_image_1">
             </div>
             <div class="activity-card-body">
@@ -299,7 +299,7 @@
             </div>
           </div>
           <div class="activity-card" data-animate>
-            <div class="activity-card-img">
+            <div class="activity-card-img" data-visibility="activity_images">
               <img src="https://placehold.co/500x350/0d2847/ffffff?text=リトルシニア支援" alt="横須賀三浦リトルシニア" data-content-img="activity_image_2">
             </div>
             <div class="activity-card-body">
@@ -308,7 +308,7 @@
             </div>
           </div>
           <div class="activity-card" data-animate>
-            <div class="activity-card-img">
+            <div class="activity-card-img" data-visibility="activity_images">
               <img src="https://placehold.co/500x350/0d2847/ffffff?text=地域イベント" alt="地域イベントへの参加" data-content-img="activity_image_3">
             </div>
             <div class="activity-card-body">
